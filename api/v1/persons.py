@@ -25,14 +25,14 @@ async def search_persons(
 ) -> list[PersonSearchItem]:
     settings = get_settings()
     body = build_persons_search_query(query=query, page_size=page_size, page_number=page_number)
-    response = await search_or_503(settings.es_persons_index, body, "Persons")
+    response = await search_or_503(settings.elasticsearch.persons_index, body, "Persons")
     return parse_person_search_hits(response.get("hits", {}).get("hits", []))
 
 
 @router.get("/{person_id}/", response_model=PersonDetailItem, summary="Get Person Details")
 async def get_person(person_id: UUID) -> PersonDetailItem:
     settings = get_settings()
-    response = await search_or_503(settings.es_persons_index, build_person_by_id_query(person_id), "Persons")
+    response = await search_or_503(settings.elasticsearch.persons_index, build_person_by_id_query(person_id), "Persons")
     hit = first_hit_or_404(response, "Person not found")
     return parse_person_detail(hit.get("_source", {}))
 
@@ -45,5 +45,5 @@ async def list_person_films(
 ) -> list[FilmListItem]:
     settings = get_settings()
     body = build_films_by_person_query(person_id=person_id, page_size=page_size, page_number=page_number)
-    response = await search_or_503(settings.es_movies_index, body, "Movies")
+    response = await search_or_503(settings.elasticsearch.movies_index, body, "Movies")
     return parse_film_hits(response.get("hits", {}).get("hits", []))

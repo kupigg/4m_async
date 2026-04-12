@@ -17,7 +17,7 @@ async def list_genres(
 ) -> list[GenreListItem]:
     settings = get_settings()
     response = await search_or_503(
-        settings.es_genres_index,
+        settings.elasticsearch.genres_index,
         build_genres_query(page_size=page_size, page_number=page_number),
         "Genres",
     )
@@ -27,6 +27,6 @@ async def list_genres(
 @router.get("/{genre_id}/", response_model=GenreDetailItem, summary="Get Genre Details")
 async def get_genre(genre_id: UUID) -> GenreDetailItem:
     settings = get_settings()
-    response = await search_or_503(settings.es_genres_index, build_genre_by_id_query(genre_id), "Genres")
+    response = await search_or_503(settings.elasticsearch.genres_index, build_genre_by_id_query(genre_id), "Genres")
     hit = first_hit_or_404(response, "Genre not found")
     return parse_genre_detail(hit.get("_source", {}))

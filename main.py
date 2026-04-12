@@ -31,11 +31,11 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title=settings.project_name,
+    title=settings.app.project_name,
     description="Async cinema API for anonymous clients (v1).",
     version="1.0.0",
-    debug=settings.debug,
+    debug=settings.app.debug,
     lifespan=lifespan,
     openapi_tags=openapi_tags,
 )
-app.include_router(v1_router, prefix=settings.api_v1_prefix)
+app.include_router(v1_router, prefix=settings.app.api_v1_prefix)

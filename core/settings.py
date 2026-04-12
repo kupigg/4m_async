@@ -1,55 +1,13 @@
 from functools import lru_cache
 
-from pydantic import Field, field_validator
+from pydantic import BaseModel, Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
-class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
-
+class AppSettings(BaseModel):
     project_name: str = "cinema-api"
     debug: bool = False
     api_v1_prefix: str = "/api/v1"
-
-    es_scheme: str = "http"
-    es_host: str = "elasticsearch"
-    es_port: int = 9200
-    es_request_timeout: int = 5
-    es_connections_per_node: int = 50
-    es_max_retries: int = 2
-    es_retry_on_timeout: bool = True
-    es_movies_index: str = "movies"
-    es_genres_index: str = "genres"
-    es_persons_index: str = "persons"
-    es_user: str | None = None
-    es_password: str | None = None
-
-    redis_startup_nodes: list[str] = Field(
-        default_factory=lambda: [
-            "redis-cluster:7000",
-            "redis-cluster:7001",
-            "redis-cluster:7002",
-            "redis-cluster:7003",
-            "redis-cluster:7004",
-            "redis-cluster:7005",
-        ]
-    )
-    redis_password: str | None = None
-    redis_socket_timeout: float = 5.0
-    redis_decode_responses: bool = True
-    redis_max_connections: int = 1000
-
-    uvicorn_host: str = "0.0.0.0"
-    uvicorn_port: int = 8000
-    uvicorn_reload: bool = False
-    uvicorn_workers: int = 4
-    uvicorn_backlog: int = 4096
-    uvicorn_limit_concurrency: int = 10000
-    uvicorn_timeout_keep_alive: int = 5
-
-    @property
-    def elasticsearch_url(self) -> str:
-        return f"{self.es_scheme}://{self.es_host}:{self.es_port}"
 
     @field_validator("debug", mode="before")
     @classmethod
@@ -64,12 +22,57 @@ class Settings(BaseSettings):
                 return False
         raise ValueError("debug must be a boolean value")
 
-    @field_validator("redis_startup_nodes", mode="before")
-    @classmethod
-    def parse_redis_startup_nodes(cls, value: str | list[str]):
-        if isinstance(value, str):
-            return [node.strip() for node in value.split(",") if node.strip()]
-        return value
+
+class ElasticsearchSettings(BaseModel):
+    scheme: str = "http"
+    host: str = "elasticsearch"
+    port: int = 9200
+    request_timeout: int = 5
+    connections_per_node: int = 50
+    max_retries: int = 2
+    retry_on_timeout: bool = True
+    movies_index: str = "movies"
+    genres_index: str = "genres"
+    persons_index: str = "persons"
+    user: str | None = None
+    password: str | None = None
+
+    @property
+    def url(self) -> str:
+        return f"{self.scheme}://{self.host}:{self.port}"
+
+
+class RedisSettings(BaseModel):
+    host: str = "redis"
+    port: int = 6379
+    password: str | None = None
+    socket_timeout: float = 5.0
+    decode_responses: bool = True
+    max_connections: int = 1000
+
+
+class UvicornSettings(BaseModel):
+    host: str = "0.0.0.0"
+    port: int = 8000
+    reload: bool = False
+    workers: int = 4
+    backlog: int = 4096
+    limit_concurrency: int = 10000
+    timeout_keep_alive: int = 5
+
+
+class Settings(BaseSettings):
+    model_config = SettingsConfigDict(
+        env_nested_delimiter="__",
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+    )
+
+    app: AppSettings = Field(default_factory=AppSettings)
+    elasticsearch: ElasticsearchSettings = Field(default_factory=ElasticsearchSettings)
+    redis: RedisSettings = Field(default_factory=RedisSettings)
+    uvicorn: UvicornSettings = Field(default_factory=UvicornSettings)
 
 
 @lru_cache(maxsize=1)

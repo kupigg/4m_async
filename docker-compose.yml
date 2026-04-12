@@ -13,16 +13,13 @@ services:
       timeout: 5s
       retries: 20
 
-  redis-cluster:
-    image: grokzen/redis-cluster:7.2.0
-    environment:
-      - IP=0.0.0.0
-      - BIND_ADDRESS=0.0.0.0
-      - INITIAL_PORT=7000
+  redis:
+    image: redis:7.2-alpine
+    command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "7000-7005:7000-7005"
+      - "6379:6379"
     healthcheck:
-      test: ["CMD-SHELL", "redis-cli -p 7000 ping | grep PONG"]
+      test: ["CMD", "redis-cli", "ping"]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -36,5 +33,5 @@ services:
     depends_on:
       elasticsearch:
         condition: service_healthy
-      redis-cluster:
+      redis:
         condition: service_healthy

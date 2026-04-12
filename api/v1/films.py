@@ -41,7 +41,7 @@ async def list_films(
         page_number=page_number,
         genre=genre,
     )
-    response = await search_or_503(settings.es_movies_index, body, "Movies")
+    response = await search_or_503(settings.elasticsearch.movies_index, body, "Movies")
     return parse_film_hits(response.get("hits", {}).get("hits", []))
 
 
@@ -53,13 +53,13 @@ async def search_films(
 ) -> list[FilmListItem]:
     settings = get_settings()
     body = build_films_search_query(query=query, page_size=page_size, page_number=page_number)
-    response = await search_or_503(settings.es_movies_index, body, "Movies")
+    response = await search_or_503(settings.elasticsearch.movies_index, body, "Movies")
     return parse_film_hits(response.get("hits", {}).get("hits", []))
 
 
 @router.get("/{film_id}/", response_model=FilmDetailItem, summary="Get Film Details")
 async def get_film(film_id: UUID) -> FilmDetailItem:
     settings = get_settings()
-    response = await search_or_503(settings.es_movies_index, build_film_by_id_query(film_id), "Movies")
+    response = await search_or_503(settings.elasticsearch.movies_index, build_film_by_id_query(film_id), "Movies")
     hit = first_hit_or_404(response, "Film not found")
     return parse_film_detail(hit.get("_source", {}))

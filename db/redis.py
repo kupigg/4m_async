@@ -1,25 +1,22 @@
-from redis.asyncio.cluster import RedisCluster
+from redis.asyncio import Redis
 
 from core.settings import get_settings
 
 
 class RedisManager:
     def __init__(self) -> None:
-        self._client: RedisCluster | None = None
+        self._client: Redis | None = None
 
-    async def init(self) -> RedisCluster:
+    async def init(self) -> Redis:
         settings = get_settings()
-        startup_nodes: list[dict[str, str | int]] = []
-        for node in settings.redis_startup_nodes:
-            host, port = node.split(":", maxsplit=1)
-            startup_nodes.append({"host": host, "port": int(port)})
-
-        self._client = RedisCluster(
-            startup_nodes=startup_nodes,
-            password=settings.redis_password,
-            socket_timeout=settings.redis_socket_timeout,
-            decode_responses=settings.redis_decode_responses,
-            max_connections=settings.redis_max_connections,
+        redis = settings.redis
+        self._client = Redis(
+            host=redis.host,
+            port=redis.port,
+            password=redis.password,
+            socket_timeout=redis.socket_timeout,
+            decode_responses=redis.decode_responses,
+            max_connections=redis.max_connections,
         )
         return self._client
 
@@ -32,15 +29,12 @@ class RedisManager:
         if self._client is None:
             return False
         try:
-            result = await self._client.ping()
-            if isinstance(result, dict):
-                return all(value for value in result.values())
-            return bool(result)
+            return bool(await self._client.ping())
         except Exception:
             return False
 
     @property
-    def client(self) -> RedisCluster:
+    def client(self) -> Redis:
         if self._client is None:
             raise RuntimeError("Redis client is not initialized")
         return self._client
