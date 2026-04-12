@@ -44,22 +44,10 @@ uvicorn main:app --host 0.0.0.0 --port 8000
 
 ## 3. Тесты
 ```bash
-python -m unittest discover -s tests -v
+pytest -v
 ```
 
-## 4. Быстрая проверка latency (p95 <= 200ms)
-Перед запуском убедитесь, что API доступен на `http://localhost:8000`.
-
-```bash
-python scripts/perf_check.py --base-url http://localhost:8000
-```
-
-Можно настроить нагрузку:
-```bash
-python scripts/perf_check.py --base-url http://localhost:8000 --total 2000 --concurrency 200
-```
-
-## 5. Примеры запросов
+## 4.  Примеры запросов
 
 Популярные фильмы:
 ```bash
@@ -86,6 +74,3 @@ curl "http://localhost:8000/api/v1/persons/search/?query=captain&page_number=1&p
 curl "http://localhost:8000/api/v1/genres/"
 ```
 
-## Примечания
-- В текущей итерации поддерживаются только анонимные пользователи.
-- Модуль аутентификации/авторизации будет добавлен отдельно (Auth).
