@@ -6,9 +6,9 @@ services:
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     ports:
-      - "9200:9200"
+      - "${ELASTICSEARCH__PORT}:{ELASTICSEARCH__PORT}"
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
+      test: ["CMD-SHELL", "curl -fsS http://${ELASTICSEARCH__HOST}:${ELASTICSEARCH__PORT}/_cluster/health || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 20
@@ -17,7 +17,7 @@ services:
     image: redis:7.2-alpine
     command: ["redis-server", "--appendonly", "yes"]
     ports:
-      - "6379:6379"
+      - "${REDIS__PORT}:${REDIS__PORT}"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s
@@ -29,7 +29,7 @@ services:
     env_file:
       - .env.example
     ports:
-      - "8000:8000"
+      - "${UVICORN__PORT}:${UVICORN__PORT}"
     depends_on:
       elasticsearch:
         condition: service_healthy

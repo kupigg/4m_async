@@ -9,12 +9,24 @@ from utils.es import first_hit_or_404, search_or_503
 from utils.films import build_films_by_person_query, parse_film_hits
 from utils.persons import (
     build_person_by_id_query,
+    build_persons_query,
     build_persons_search_query,
     parse_person_detail,
     parse_person_search_hits,
 )
 
 router = APIRouter(prefix="/persons")
+
+
+@router.get("/", response_model=list[PersonSearchItem], summary="List Persons")
+async def list_persons(
+    page_size: int = Query(default=50, ge=1, le=100),
+    page_number: int = Query(default=1, ge=1),
+) -> list[PersonSearchItem]:
+    settings = get_settings()
+    body = build_persons_query(page_size=page_size, page_number=page_number)
+    response = await search_or_503(settings.elasticsearch.persons_index, body, "Persons")
+    return parse_person_search_hits(response.get("hits", {}).get("hits", []))
 
 
 @router.get("/search/", response_model=list[PersonSearchItem], summary="Search Persons")

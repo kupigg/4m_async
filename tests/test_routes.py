@@ -1,11 +1,16 @@
 from unittest.mock import AsyncMock, patch
+from collections.abc import AsyncIterator
 
+import httpx
 import pytest
+import pytest_asyncio
 from fastapi import FastAPI
-from fastapi.testclient import TestClient
 
 from api.v1 import router as v1_router
+from tests.settings import FunctionalTestSettings
 import utils.es as es_utils
+
+pytestmark = pytest.mark.asyncio
 
 
 class FakeESClient:
@@ -18,39 +23,41 @@ class FakeESClient:
         return self.payload
 
 
-@pytest.fixture
-def client() -> TestClient:
+@pytest_asyncio.fixture
+async def client(settings: FunctionalTestSettings) -> AsyncIterator[httpx.AsyncClient]:
     app = FastAPI()
     app.include_router(v1_router, prefix="/api/v1")
-    return TestClient(app)
+    transport = httpx.ASGITransport(app=app)
+    async with httpx.AsyncClient(transport=transport, base_url=settings.api.asgi_base_url) as test_client:
+        yield test_client
 
 
-def test_health_route(client: TestClient) -> None:
-    response = client.get("/api/v1/health")
+async def test_health_route(client: httpx.AsyncClient) -> None:
+    response = await client.get("/api/v1/health")
     assert response.status_code == 200
     assert response.json() == {"status": "ok"}
 
 
-def test_ready_route_ok(client: TestClient) -> None:
+async def test_ready_route_ok(client: httpx.AsyncClient) -> None:
     with patch("api.v1.health.es_manager.ping", new=AsyncMock(return_value=True)), patch(
         "api.v1.health.redis_manager.ping", new=AsyncMock(return_value=True)
     ):
-        response = client.get("/api/v1/ready")
+        response = await client.get("/api/v1/ready")
 
     assert response.status_code == 200
     assert response.json()["status"] == "ok"
 
 
-def test_ready_route_degraded(client: TestClient) -> None:
+async def test_ready_route_degraded(client: httpx.AsyncClient) -> None:
     with patch("api.v1.health.es_manager.ping", new=AsyncMock(return_value=False)), patch(
         "api.v1.health.redis_manager.ping", new=AsyncMock(return_value=True)
     ):
-        response = client.get("/api/v1/ready")
+        response = await client.get("/api/v1/ready")
 
     assert response.status_code == 503
 
 
-def test_films_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_films_route(client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_client = FakeESClient(
         {
             "hits": {
@@ -68,30 +75,30 @@ def test_films_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> Non
     )
 
     monkeypatch.setattr(es_utils.es_manager, "_client", fake_client)
-    response = client.get("/api/v1/films?sort=-imdb_rating&page_size=50&page_number=1")
+    response = await client.get("/api/v1/films?sort=-imdb_rating&page_size=50&page_number=1")
 
     assert response.status_code == 200
     assert response.json()[0]["uuid"] == "524e4331-e14b-24d3-a156-426614174003"
 
 
-def test_films_route_with_genre_filter(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_films_route_with_genre_filter(client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_client = FakeESClient({"hits": {"hits": []}})
     genre = "d007f2f8-4d45-4902-8ee0-067bae469161"
 
     monkeypatch.setattr(es_utils.es_manager, "_client", fake_client)
-    response = client.get(f"/api/v1/films?genre={genre}&sort=-imdb_rating")
+    response = await client.get(f"/api/v1/films?genre={genre}&sort=-imdb_rating")
 
     assert response.status_code == 200
     _, body = fake_client.calls[0]
     assert body["query"]["bool"]["filter"] == [{"term": {"genres.id": genre}}]
 
 
-def test_films_route_with_invalid_sort(client: TestClient) -> None:
-    response = client.get("/api/v1/films?sort=-title")
+async def test_films_route_with_invalid_sort(client: httpx.AsyncClient) -> None:
+    response = await client.get("/api/v1/films?sort=-title")
     assert response.status_code == 422
 
 
-def test_films_search_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_films_search_route(client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_client = FakeESClient(
         {
             "hits": {
@@ -109,7 +116,7 @@ def test_films_search_route(client: TestClient, monkeypatch: pytest.MonkeyPatch)
     )
 
     monkeypatch.setattr(es_utils.es_manager, "_client", fake_client)
-    response = client.get("/api/v1/films/search/?query=star&page_number=1&page_size=50")
+    response = await client.get("/api/v1/films/search/?query=star&page_number=1&page_size=50")
 
     assert response.status_code == 200
     assert response.json()[0]["title"] == "Billion Star Hotel"
@@ -117,7 +124,7 @@ def test_films_search_route(client: TestClient, monkeypatch: pytest.MonkeyPatch)
     assert body["query"]["multi_match"]["query"] == "star"
 
 
-def test_film_detail_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_film_detail_route(client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     film_id = "b31592e5-673d-46dc-a561-9446438aea0f"
     fake_client = FakeESClient(
         {
@@ -141,14 +148,14 @@ def test_film_detail_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) 
     )
 
     monkeypatch.setattr(es_utils.es_manager, "_client", fake_client)
-    response = client.get(f"/api/v1/films/{film_id}/")
+    response = await client.get(f"/api/v1/films/{film_id}/")
 
     assert response.status_code == 200
     assert response.json()["uuid"] == film_id
     assert response.json()["genre"][0]["name"] == "Action"
 
 
-def test_persons_search_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_persons_search_route(client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_client = FakeESClient(
         {
             "hits": {
@@ -166,13 +173,13 @@ def test_persons_search_route(client: TestClient, monkeypatch: pytest.MonkeyPatc
     )
 
     monkeypatch.setattr(es_utils.es_manager, "_client", fake_client)
-    response = client.get("/api/v1/persons/search/?query=captain&page_number=1&page_size=50")
+    response = await client.get("/api/v1/persons/search/?query=captain&page_number=1&page_size=50")
 
     assert response.status_code == 200
     assert response.json()[0]["full_name"] == "Captain Raju"
 
 
-def test_person_detail_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_person_detail_route(client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     person_id = "524e4331-e14b-24d3-a456-426614174002"
     fake_client = FakeESClient(
         {
@@ -191,13 +198,13 @@ def test_person_detail_route(client: TestClient, monkeypatch: pytest.MonkeyPatch
     )
 
     monkeypatch.setattr(es_utils.es_manager, "_client", fake_client)
-    response = client.get(f"/api/v1/persons/{person_id}/")
+    response = await client.get(f"/api/v1/persons/{person_id}/")
 
     assert response.status_code == 200
     assert response.json()["uuid"] == person_id
 
 
-def test_person_films_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_person_films_route(client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     person_id = "524e4331-e14b-24d3-a456-426614174002"
     fake_client = FakeESClient(
         {
@@ -216,7 +223,7 @@ def test_person_films_route(client: TestClient, monkeypatch: pytest.MonkeyPatch)
     )
 
     monkeypatch.setattr(es_utils.es_manager, "_client", fake_client)
-    response = client.get(f"/api/v1/persons/{person_id}/film/?page_number=1&page_size=50")
+    response = await client.get(f"/api/v1/persons/{person_id}/film/?page_number=1&page_size=50")
 
     assert response.status_code == 200
     assert response.json()[0]["title"] == "Star Wars: Episode VI - Return of the Jedi"
@@ -224,7 +231,7 @@ def test_person_films_route(client: TestClient, monkeypatch: pytest.MonkeyPatch)
     assert body["query"]["term"]["persons.id"] == person_id
 
 
-def test_genres_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_genres_route(client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     fake_client = FakeESClient(
         {
             "hits": {
@@ -242,13 +249,15 @@ def test_genres_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> No
     )
 
     monkeypatch.setattr(es_utils.es_manager, "_client", fake_client)
-    response = client.get("/api/v1/genres/?page_size=50&page_number=1")
+    response = await client.get("/api/v1/genres/?page_size=50&page_number=1")
 
     assert response.status_code == 200
     assert response.json()[0]["name"] == "Adventure"
+    _, body = fake_client.calls[0]
+    assert body["sort"] == [{"name.keyword": {"order": "asc", "missing": "_last"}}]
 
 
-def test_genre_detail_route(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_genre_detail_route(client: httpx.AsyncClient, monkeypatch: pytest.MonkeyPatch) -> None:
     genre_id = "aabbd3f3-f656-4fea-9146-63f285edf5c1"
     fake_client = FakeESClient(
         {
@@ -267,7 +276,7 @@ def test_genre_detail_route(client: TestClient, monkeypatch: pytest.MonkeyPatch)
     )
 
     monkeypatch.setattr(es_utils.es_manager, "_client", fake_client)
-    response = client.get(f"/api/v1/genres/{genre_id}/")
+    response = await client.get(f"/api/v1/genres/{genre_id}/")
 
     assert response.status_code == 200
     assert response.json()["uuid"] == genre_id

@@ -8,7 +8,7 @@ def build_genres_query(page_size: int, page_number: int) -> dict:
         "query": {"match_all": {}},
         "from": (page_number - 1) * page_size,
         "size": page_size,
-        "sort": [{"name": {"order": "asc", "missing": "_last"}}],
+        "sort": [{"name.keyword": {"order": "asc", "missing": "_last"}}],
     }
 
 

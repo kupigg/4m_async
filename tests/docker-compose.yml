@@ -1,0 +1,87 @@
+services:
+  elasticsearch:
+    image: ${TEST_ELASTICSEARCH_IMAGE}
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - http.port=${ELASTICSEARCH__PORT}
+      - ES_JAVA_OPTS=${TEST_ES_JAVA_OPTS}
+    ports:
+      - "${TEST_ELASTICSEARCH_PORT}:${ELASTICSEARCH__PORT}"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS ${TEST_ELASTICSEARCH_HEALTHCHECK_URL} || exit 1"]
+      interval: ${TEST_ES_HEALTHCHECK_INTERVAL}
+      timeout: ${TEST_ES_HEALTHCHECK_TIMEOUT}
+      retries: ${TEST_ES_HEALTHCHECK_RETRIES}
+
+  redis:
+    image: ${TEST_REDIS_IMAGE}
+    command: ["redis-server", "--appendonly", "yes", "--port", "${REDIS__PORT}"]
+    ports:
+      - "${TEST_REDIS_PORT}:${REDIS__PORT}"
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "${REDIS__PORT}", "ping"]
+      interval: ${TEST_REDIS_HEALTHCHECK_INTERVAL}
+      timeout: ${TEST_REDIS_HEALTHCHECK_TIMEOUT}
+      retries: ${TEST_REDIS_HEALTHCHECK_RETRIES}
+
+  api:
+    build:
+      context: ..
+    environment:
+      APP__PROJECT_NAME: ${APP__PROJECT_NAME}
+      APP__DEBUG: ${APP__DEBUG}
+      APP__API_V1_PREFIX: ${APP__API_V1_PREFIX}
+      ELASTICSEARCH__SCHEME: ${ELASTICSEARCH__SCHEME}
+      ELASTICSEARCH__HOST: ${ELASTICSEARCH__HOST}
+      ELASTICSEARCH__PORT: ${ELASTICSEARCH__PORT}
+      ELASTICSEARCH__REQUEST_TIMEOUT: ${ELASTICSEARCH__REQUEST_TIMEOUT}
+      ELASTICSEARCH__CONNECTIONS_PER_NODE: ${ELASTICSEARCH__CONNECTIONS_PER_NODE}
+      ELASTICSEARCH__MAX_RETRIES: ${ELASTICSEARCH__MAX_RETRIES}
+      ELASTICSEARCH__RETRY_ON_TIMEOUT: ${ELASTICSEARCH__RETRY_ON_TIMEOUT}
+      ELASTICSEARCH__MOVIES_INDEX: ${ELASTICSEARCH__MOVIES_INDEX}
+      ELASTICSEARCH__GENRES_INDEX: ${ELASTICSEARCH__GENRES_INDEX}
+      ELASTICSEARCH__PERSONS_INDEX: ${ELASTICSEARCH__PERSONS_INDEX}
+      ELASTICSEARCH__USER: ${ELASTICSEARCH__USER}
+      ELASTICSEARCH__PASSWORD: ${ELASTICSEARCH__PASSWORD}
+      REDIS__HOST: ${REDIS__HOST}
+      REDIS__PORT: ${REDIS__PORT}
+      REDIS__PASSWORD: ${REDIS__PASSWORD}
+      REDIS__SOCKET_TIMEOUT: ${REDIS__SOCKET_TIMEOUT}
+      REDIS__DECODE_RESPONSES: ${REDIS__DECODE_RESPONSES}
+      REDIS__MAX_CONNECTIONS: ${REDIS__MAX_CONNECTIONS}
+      REDIS__CACHE_TTL: ${REDIS__CACHE_TTL}
+      UVICORN__HOST: ${UVICORN__HOST}
+      UVICORN__PORT: ${UVICORN__PORT}
+      UVICORN__RELOAD: ${UVICORN__RELOAD}
+      UVICORN__WORKERS: ${TEST_UVICORN_WORKERS}
+      UVICORN__BACKLOG: ${UVICORN__BACKLOG}
+      UVICORN__LIMIT_CONCURRENCY: ${TEST_UVICORN_LIMIT_CONCURRENCY}
+      UVICORN__TIMEOUT_KEEP_ALIVE: ${UVICORN__TIMEOUT_KEEP_ALIVE}
+    ports:
+      - "${TEST_API_PORT}:${UVICORN__PORT}"
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  tests:
+    build:
+      context: ..
+    environment:
+      TEST_API__BASE_URL: ${TEST_API__BASE_URL}
+      TEST_API__ASGI_BASE_URL: ${TEST_API__ASGI_BASE_URL}
+      TEST_ELASTICSEARCH__URL: ${TEST_ELASTICSEARCH__URL}
+      TEST_ELASTICSEARCH__MOVIES_INDEX: ${TEST_ELASTICSEARCH__MOVIES_INDEX}
+      TEST_ELASTICSEARCH__GENRES_INDEX: ${TEST_ELASTICSEARCH__GENRES_INDEX}
+      TEST_ELASTICSEARCH__PERSONS_INDEX: ${TEST_ELASTICSEARCH__PERSONS_INDEX}
+      TEST_REDIS__URL: ${TEST_REDIS__URL}
+      TEST_WAIT__TIMEOUT: ${TEST_WAIT__TIMEOUT}
+      TEST_WAIT__INTERVAL: ${TEST_WAIT__INTERVAL}
+    depends_on:
+      - api
+    command: >
+      sh -c "pip install --no-cache-dir -r tests/requirements.txt
+      && python -m tests.functional.utils.wait_for_services
+      && pytest tests/functional -v"

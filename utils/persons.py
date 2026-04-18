@@ -3,6 +3,15 @@ from uuid import UUID
 from schemas.person import PersonDetailItem, PersonFilmItem, PersonSearchItem
 
 
+def build_persons_query(page_size: int, page_number: int) -> dict:
+    return {
+        "query": {"match_all": {}},
+        "from": (page_number - 1) * page_size,
+        "size": page_size,
+        "sort": [{"full_name.keyword": {"order": "asc", "missing": "_last"}}],
+    }
+
+
 def build_persons_search_query(query: str, page_size: int, page_number: int) -> dict:
     return {
         "query": {

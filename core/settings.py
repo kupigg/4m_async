@@ -49,6 +49,7 @@ class RedisSettings(BaseModel):
     socket_timeout: float = 5.0
     decode_responses: bool = True
     max_connections: int = 1000
+    cache_ttl: int = 300
 
 
 class UvicornSettings(BaseModel):

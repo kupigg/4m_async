@@ -1,0 +1,92 @@
+[
+  {
+    "id": "aaaaaaaa-1111-1111-1111-aaaaaaaaaaaa",
+    "title": "The Matrix",
+    "description": "A hacker discovers the truth about simulated reality.",
+    "imdb_rating": 8.7,
+    "genres": [
+      {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Action"
+      }
+    ],
+    "persons": [
+      {
+        "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "full_name": "Keanu Reeves"
+      },
+      {
+        "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        "full_name": "Lana Wachowski"
+      },
+      {
+        "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        "full_name": "Carrie Anne Moss"
+      }
+    ],
+    "actors": [
+      {
+        "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "full_name": "Keanu Reeves"
+      },
+      {
+        "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+        "full_name": "Carrie Anne Moss"
+      }
+    ],
+    "writers": [
+      {
+        "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        "full_name": "Lana Wachowski"
+      }
+    ],
+    "directors": [
+      {
+        "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+        "full_name": "Lana Wachowski"
+      }
+    ]
+  },
+  {
+    "id": "bbbbbbbb-2222-2222-2222-bbbbbbbbbbbb",
+    "title": "John Wick",
+    "description": "An ex-hitman returns to the criminal underworld.",
+    "imdb_rating": 7.4,
+    "genres": [
+      {
+        "id": "11111111-1111-1111-1111-111111111111",
+        "name": "Action"
+      }
+    ],
+    "persons": [
+      {
+        "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "full_name": "Keanu Reeves"
+      }
+    ],
+    "actors": [
+      {
+        "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+        "full_name": "Keanu Reeves"
+      }
+    ],
+    "writers": [],
+    "directors": []
+  },
+  {
+    "id": "cccccccc-3333-3333-3333-cccccccccccc",
+    "title": "Quiet Drama",
+    "description": "A slow story about family memories.",
+    "imdb_rating": 6.5,
+    "genres": [
+      {
+        "id": "22222222-2222-2222-2222-222222222222",
+        "name": "Drama"
+      }
+    ],
+    "persons": [],
+    "actors": [],
+    "writers": [],
+    "directors": []
+  }
+]

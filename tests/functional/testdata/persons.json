@@ -1,0 +1,42 @@
+[
+  {
+    "id": "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa",
+    "full_name": "Keanu Reeves",
+    "name": "Keanu Reeves",
+    "description": "Actor known for Neo",
+    "films": [
+      {
+        "id": "aaaaaaaa-1111-1111-1111-aaaaaaaaaaaa",
+        "roles": ["actor"]
+      },
+      {
+        "id": "bbbbbbbb-2222-2222-2222-bbbbbbbbbbbb",
+        "roles": ["actor"]
+      }
+    ]
+  },
+  {
+    "id": "bbbbbbbb-bbbb-bbbb-bbbb-bbbbbbbbbbbb",
+    "full_name": "Lana Wachowski",
+    "name": "Lana Wachowski",
+    "description": "Director and writer",
+    "films": [
+      {
+        "id": "aaaaaaaa-1111-1111-1111-aaaaaaaaaaaa",
+        "roles": ["director", "writer"]
+      }
+    ]
+  },
+  {
+    "id": "cccccccc-cccc-cccc-cccc-cccccccccccc",
+    "full_name": "Carrie Anne Moss",
+    "name": "Carrie Anne Moss",
+    "description": "Actor known for Trinity",
+    "films": [
+      {
+        "id": "aaaaaaaa-1111-1111-1111-aaaaaaaaaaaa",
+        "roles": ["actor"]
+      }
+    ]
+  }
+]
