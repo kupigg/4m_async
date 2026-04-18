@@ -5,7 +5,7 @@ from elasticsearch import AsyncElasticsearch
 from tests.functional.src.assertions import assert_status
 from tests.settings import FunctionalTestSettings
 
-pytestmark = pytest.mark.asyncio
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 PERSON_ID = "aaaaaaaa-aaaa-aaaa-aaaa-aaaaaaaaaaaa"
 

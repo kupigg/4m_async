@@ -5,7 +5,7 @@ from elasticsearch import AsyncElasticsearch
 from tests.functional.src.assertions import assert_status
 from tests.settings import FunctionalTestSettings
 
-pytestmark = pytest.mark.asyncio
+pytestmark = pytest.mark.asyncio(loop_scope="session")
 
 GENRE_ID = "11111111-1111-1111-1111-111111111111"
 

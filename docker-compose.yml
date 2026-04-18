@@ -6,7 +6,7 @@ services:
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     ports:
-      - "${ELASTICSEARCH__PORT}:{ELASTICSEARCH__PORT}"
+      - "${ELASTICSEARCH__PORT}:${ELASTICSEARCH__PORT}"
     healthcheck:
       test: ["CMD-SHELL", "curl -fsS http://${ELASTICSEARCH__HOST}:${ELASTICSEARCH__PORT}/_cluster/health || exit 1"]
       interval: 10s

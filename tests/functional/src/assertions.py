@@ -6,6 +6,7 @@ async def assert_status(
     path: str,
     expected_status: int,
 ) -> dict | list:
+    # async with aiohttp.ClientSession() as session:
     async with session.get(path) as response:
         payload = await response.json()
         assert response.status == expected_status, payload

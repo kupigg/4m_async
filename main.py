@@ -39,3 +39,14 @@ app = FastAPI(
     openapi_tags=openapi_tags,
 )
 app.include_router(v1_router, prefix=settings.app.api_v1_prefix)
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",
+        host=settings.uvicorn.host,
+        port=settings.uvicorn.port,
+        # log_level=settings.app.log_level,
+        reload=settings.app.debug,
+    )

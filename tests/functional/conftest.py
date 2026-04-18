@@ -1,4 +1,3 @@
-import asyncio
 from collections.abc import AsyncIterator
 
 import aiohttp
@@ -12,26 +11,25 @@ from tests.functional.utils.wait_for_services import wait_for_services
 from tests.settings import FunctionalTestSettings
 
 
-@pytest_asyncio.fixture(scope="session")
-def event_loop() -> AsyncIterator[asyncio.AbstractEventLoop]:
-    loop = asyncio.new_event_loop()
-    yield loop
-    loop.close()
-
-
 @pytest.fixture(scope="session", autouse=True)
 def wait_for_test_services(settings: FunctionalTestSettings) -> None:
     wait_for_services(settings)
 
 
-@pytest_asyncio.fixture(scope="session")
-async def http_session(settings: FunctionalTestSettings) -> AsyncIterator[aiohttp.ClientSession]:
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def http_session(
+    settings: FunctionalTestSettings,
+    wait_for_test_services: None,
+) -> AsyncIterator[aiohttp.ClientSession]:
     async with aiohttp.ClientSession(base_url=settings.api.base_url) as session:
         yield session
 
 
-@pytest_asyncio.fixture(scope="session")
-async def es_client(settings: FunctionalTestSettings) -> AsyncIterator[AsyncElasticsearch]:
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def es_client(
+    settings: FunctionalTestSettings,
+    wait_for_test_services: None,
+) -> AsyncIterator[AsyncElasticsearch]:
     client = AsyncElasticsearch(hosts=settings.elasticsearch.url)
     try:
         yield client
@@ -39,8 +37,11 @@ async def es_client(settings: FunctionalTestSettings) -> AsyncIterator[AsyncElas
         await client.close()
 
 
-@pytest_asyncio.fixture(scope="session")
-async def redis_client(settings: FunctionalTestSettings) -> AsyncIterator[Redis]:
+@pytest_asyncio.fixture(scope="session", loop_scope="session")
+async def redis_client(
+    settings: FunctionalTestSettings,
+    wait_for_test_services: None,
+) -> AsyncIterator[Redis]:
     client = Redis.from_url(settings.redis.url, decode_responses=True)
     try:
         yield client
@@ -48,7 +49,7 @@ async def redis_client(settings: FunctionalTestSettings) -> AsyncIterator[Redis]
         await client.aclose()
 
 
-@pytest_asyncio.fixture(autouse=True)
+@pytest_asyncio.fixture(autouse=True, loop_scope="session")
 async def prepare_data(
     settings: FunctionalTestSettings,
     es_client: AsyncElasticsearch,
